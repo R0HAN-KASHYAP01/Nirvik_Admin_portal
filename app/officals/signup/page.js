@@ -166,166 +166,199 @@ export default function OfficialSignupPage() {
   }
 
   return (
-    <main className="max-w-xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold mb-4">
-        Official — Registration Request
-      </h1>
-
-      <p className="text-sm text-gray-600 mb-6">
-        Your request will be reviewed by the System Admin before your account is
-        activated.
-      </p>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Field
-          label="Full Name"
-          name="fullName"
-          value={form.fullName}
-          onChange={update}
-          required
-        />
-
-        <Field
-          label="Official Email"
-          name="officialEmail"
-          type="email"
-          value={form.officialEmail}
-          onChange={update}
-          required
-        />
-
-        <Field
-          label="Mobile Number"
-          name="mobileNumber"
-          value={form.mobileNumber}
-          onChange={update}
-          required
-        />
-
-        <Field
-          label="Employee ID"
-          name="employeeId"
-          value={form.employeeId}
-          onChange={update}
-          required
-        />
-
-        <Field
-          label="Designation"
-          name="designation"
-          value={form.designation}
-          onChange={update}
-          required
-        />
-
-        <Field
-          label="Department"
-          name="department"
-          value={form.department}
-          onChange={update}
-          required
-        />
-
-        {/* Official level */}
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Official Level
-          </label>
-
-          <select
-            className="w-full border rounded px-3 py-2"
-            name="officialLevel"
-            value={form.officialLevel}
-            onChange={update}
-            required
-          >
-            <option value="district">District</option>
-            <option value="state">State</option>
-            <option value="mosje">MoSJE</option>
-            <option value="central">Central</option>
-          </select>
+    <>
+      <header className="gov-masthead">
+        <div className="tricolor-bar" />
+        <div className="gov-container gov-masthead-inner">
+          <div className="gov-emblem" aria-hidden="true">
+            NK
+          </div>
+          <div className="gov-masthead-text">
+            <p className="gov-masthead-org">Government of India &middot; Sentinal Programme</p>
+            <p className="gov-masthead-title">NIRVIK Registration Portal</p>
+          </div>
         </div>
+      </header>
 
-        <Field
-          label="State"
-          name="state"
-          value={form.state}
-          onChange={update}
-          required
-        />
+      <main className="gov-container gov-page auth-page-wrap">
+        <div className="auth-card auth-card-wide card">
+          <div className="auth-card-head">
+            <h1>Official — registration request</h1>
+            <p>
+              Your request will be reviewed by the system admin before your account is
+              activated.
+            </p>
+          </div>
 
-        <Field
-          label="District"
-          name="district"
-          value={form.district}
-          onChange={update}
-          required
-        />
+          <div className="card-body auth-card-body">
+            <form onSubmit={handleSubmit} noValidate className="field-grid auth-form">
+              <Field
+                label="Full Name"
+                name="fullName"
+                value={form.fullName}
+                onChange={update}
+                required
+              />
 
-        <Field
-          label="Office Location"
-          name="officeLocation"
-          value={form.officeLocation}
-          onChange={update}
-          required
-        />
+              <Field
+                label="Official Email"
+                name="officialEmail"
+                type="email"
+                value={form.officialEmail}
+                onChange={update}
+                required
+              />
 
-        {/* Government ID */}
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Government ID (document)
-          </label>
+              <Field
+                label="Mobile Number"
+                name="mobileNumber"
+                value={form.mobileNumber}
+                onChange={update}
+                required
+              />
 
-          <input
-            type="file"
-            required
-            onChange={(e) => setGovIdFile(e.target.files?.[0] || null)}
-          />
+              <Field
+                label="Employee ID"
+                name="employeeId"
+                value={form.employeeId}
+                onChange={update}
+                required
+              />
+
+              <Field
+                label="Designation"
+                name="designation"
+                value={form.designation}
+                onChange={update}
+                required
+              />
+
+              <Field
+                label="Department"
+                name="department"
+                value={form.department}
+                onChange={update}
+                required
+              />
+
+              {/* Official level */}
+              <div className="form-group">
+                <label className="form-label" htmlFor="officialLevel">
+                  Official Level
+                </label>
+
+                <select
+                  id="officialLevel"
+                  className="form-select"
+                  name="officialLevel"
+                  value={form.officialLevel}
+                  onChange={update}
+                  required
+                >
+                  <option value="district">District</option>
+                  <option value="state">State</option>
+                  <option value="mosje">MoSJE</option>
+                  <option value="central">Central</option>
+                </select>
+              </div>
+
+              <Field
+                label="State"
+                name="state"
+                value={form.state}
+                onChange={update}
+                required
+              />
+
+              <Field
+                label="District"
+                name="district"
+                value={form.district}
+                onChange={update}
+                required
+              />
+
+              <Field
+                label="Office Location"
+                name="officeLocation"
+                value={form.officeLocation}
+                onChange={update}
+                required
+              />
+
+              {/* Government ID */}
+              <div className="form-group field-full">
+                <label className="form-label" htmlFor="govIdFile">
+                  Government ID (document)
+                </label>
+
+                <input
+                  id="govIdFile"
+                  type="file"
+                  className="form-file"
+                  required
+                  onChange={(e) => setGovIdFile(e.target.files?.[0] || null)}
+                />
+              </div>
+
+              {/* Authorization document */}
+              <div className="form-group field-full">
+                <label className="form-label" htmlFor="authDocFile">
+                  Authorization / Official Document
+                </label>
+
+                <input
+                  id="authDocFile"
+                  type="file"
+                  className="form-file"
+                  required
+                  onChange={(e) => setAuthDocFile(e.target.files?.[0] || null)}
+                />
+              </div>
+
+              <Field
+                label="Password"
+                name="password"
+                type="password"
+                value={form.password}
+                onChange={update}
+                required
+                full
+              />
+
+              {error && (
+                <div className="alert-danger field-full" role="alert">
+                  {error}
+                </div>
+              )}
+
+              <div className="field-full">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn btn-primary btn-lg auth-submit"
+                >
+                  {loading ? 'Submitting…' : 'Submit request'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-
-        {/* Authorization document */}
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Authorization / Official Document
-          </label>
-
-          <input
-            type="file"
-            required
-            onChange={(e) => setAuthDocFile(e.target.files?.[0] || null)}
-          />
-        </div>
-
-        <Field
-          label="Password"
-          name="password"
-          type="password"
-          value={form.password}
-          onChange={update}
-          required
-        />
-
-        {error && <p className="text-red-600 text-sm">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-black text-white rounded py-2 disabled:opacity-50"
-        >
-          {loading ? 'Submitting...' : 'Submit Request'}
-        </button>
-      </form>
-    </main>
+      </main>
+    </>
   )
 }
 
-function Field({ label, name, value, onChange, type = 'text', required }) {
+function Field({ label, name, value, onChange, type = 'text', required, full = false }) {
   return (
-    <div>
-      <label className="block text-sm font-medium mb-1">{label}</label>
+    <div className={`form-group${full ? ' field-full' : ''}`}>
+      <label className="form-label" htmlFor={name}>
+        {label}
+      </label>
 
       <input
-        className="w-full border rounded px-3 py-2"
+        id={name}
+        className="form-input"
         type={type}
         name={name}
         value={value}

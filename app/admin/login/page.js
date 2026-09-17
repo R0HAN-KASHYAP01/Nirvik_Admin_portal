@@ -51,33 +51,94 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main className="max-w-sm mx-auto mt-24 p-6 border rounded">
-      <h1 className="text-xl font-semibold mb-4">Admin Sign In</h1>
-      <form onSubmit={handleLogin} className="space-y-3">
-        <input
-          className="w-full border rounded px-3 py-2"
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          className="w-full border rounded px-3 py-2"
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        {error && <p className="text-red-600 text-sm">{error}</p>}
-        <button
-          disabled={loading}
-          className="w-full bg-black text-white rounded py-2 disabled:opacity-50"
-        >
-          {loading ? 'Signing in...' : 'Sign In'}
-        </button>
-      </form>
+    <main className="auth-shell">
+      <section className="auth-brand" aria-hidden="true">
+        <div className="tricolor-bar" />
+        <div className="auth-brand-inner">
+          <div className="auth-brand-mark">
+            <span className="gov-emblem">NK</span>
+            <div>
+              <p className="auth-brand-org">Government of India &middot; Sentinal Programme</p>
+              <p className="auth-brand-title">NIRVIK Administrative Portal</p>
+            </div>
+          </div>
+
+          <p className="auth-brand-copy">
+            The administrative console for NIRVIK. Sign in with your system administrator
+            account to manage registration requests and platform access.
+          </p>
+
+          <ul className="auth-brand-list">
+            <li>Review pending registration requests</li>
+            <li>Approve or reject applicant accounts</li>
+            <li>Oversee citizen, official and admin access</li>
+          </ul>
+
+          <p className="auth-brand-footnote">
+            This portal is restricted to authorised personnel. Access attempts are logged.
+          </p>
+        </div>
+      </section>
+
+      <section className="auth-panel">
+        <div className="auth-card card">
+          <div className="auth-card-head">
+            <h1>Admin sign in</h1>
+            <p>Enter your administrator credentials to continue.</p>
+          </div>
+
+          <form onSubmit={handleLogin} noValidate>
+            <div className="form-group">
+              <label className="form-label" htmlFor="admin-email">
+                Email address
+              </label>
+              <input
+                id="admin-email"
+                className="form-input"
+                type="email"
+                autoComplete="username"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="admin-password">
+                Password
+              </label>
+              <input
+                id="admin-password"
+                className="form-input"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            {error && (
+              <div className="alert-danger" role="alert">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn btn-primary btn-lg auth-submit"
+            >
+              {loading ? 'Signing in…' : 'Sign in'}
+            </button>
+          </form>
+        </div>
+
+        <p className="auth-panel-footnote">
+          Looking to register instead?{' '}
+          <a href="/register">Submit a registration request</a>.
+        </p>
+      </section>
     </main>
   )
 }

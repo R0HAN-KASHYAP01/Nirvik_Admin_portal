@@ -9,6 +9,25 @@ import { schemeLabel, categoryLabel } from '@/lib/schemeCatalog'
 const prettify = (key) =>
   key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 
+const MONTHS = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+]
+
+// Formatted from UTC parts so the server and client render identical markup.
+const formatDate = (value) => {
+  if (!value) return null
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return null
+  return `${String(d.getUTCDate()).padStart(2, '0')} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`
+}
+
+const STATUS_BADGE = {
+  approved: 'badge-success',
+  rejected: 'badge-danger',
+  pending: 'badge-warning',
+}
+
 export default function ApplicationRow({ app, readOnly = false }) {
   const [loading, setLoading] = useState(false)
   const [reason, setReason] = useState('')
@@ -87,98 +106,126 @@ export default function ApplicationRow({ app, readOnly = false }) {
     window.open(data.signedUrl, '_blank')
   }
 
+  const visibleDetails = otherDetailEntries.filter(([, v]) => v)
+  const availableDocs = fileFieldNames.filter((name) => details[name])
+  const receivedOn = formatDate(app.created_at)
+  const reasonInputId = `reject-reason-${app.role}-${app.profile_id}`
+
   return (
-    <div className="border rounded p-4">
-      <div className="flex justify-between items-start gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-semibold uppercase tracking-wide bg-gray-100 text-gray-700 rounded px-2 py-0.5">
-              {roleLabel}
-            </span>
-            <p className="font-medium">{app.full_name}</p>
-          </div>
+    <>
+      <tr>
+        <td>
+          <p className="applicant-name">{app.full_name}</p>
+          <p className="applicant-contact">{app.official_email}</p>
+          <p className="applicant-contact">{app.mobile_number}</p>
+        </td>
 
-          <p className="text-sm text-gray-600">
-            {app.official_email} · {app.mobile_number}
-          </p>
+        <td>
+          <span className="badge badge-info">{roleLabel}</span>
+        </td>
 
-                    {otherDetailEntries.length > 0 && (
-            <p className="text-sm text-gray-600 mt-1">
-              {otherDetailEntries
-                .filter(([, v]) => v)
-                .map(([key, value]) => {
-                  const displayValue =
-                    key === 'scheme_code' ? schemeLabel(value)
-                    : key === 'scheme_category' ? categoryLabel(value)
-                    : value
-                  return `${labelFor(key)}: ${displayValue}`
-                })
-                .join(' · ')}
-            </p>
+        <td>
+          {visibleDetails.length > 0 ? (
+            <dl className="detail-list">
+              {visibleDetails.map(([key, value]) => {
+                const displayValue =
+                  key === 'scheme_code' ? schemeLabel(value)
+                  : key === 'scheme_category' ? categoryLabel(value)
+                  : value
+                return (
+                  <div key={key} className="detail-item">
+                    <dt>{labelFor(key)}</dt>
+                    <dd>{displayValue}</dd>
+                  </div>
+                )
+              })}
+            </dl>
+          ) : (
+            <span className="cell-blank">No extra details</span>
           )}
+        </td>
 
-          {fileFieldNames.length > 0 && (
-            <div className="mt-2 space-x-3 text-sm">
-              {fileFieldNames.map((name) =>
-                details[name] ? (
+        <td>
+          {availableDocs.length > 0 ? (
+            <ul className="doc-list">
+              {availableDocs.map((name) => (
+                <li key={name}>
                   <button
-                    key={name}
-                    className="text-blue-600 underline"
+                    type="button"
+                    className="doc-link"
                     onClick={() => viewDocument(details[name])}
                   >
                     {labelFor(name)}
                   </button>
-                ) : null
-              )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <span className="cell-blank">None uploaded</span>
+          )}
+        </td>
+
+        <td className="cell-date">{receivedOn || <span className="cell-blank">Not recorded</span>}</td>
+
+        <td className="gov-col-action">
+          {readOnly ? (
+            <span className={`badge ${STATUS_BADGE[app.status] || 'badge-neutral'}`}>
+              {app.status}
+            </span>
+          ) : (
+            <div className="row-actions">
+              <button
+                type="button"
+                className="btn btn-primary btn-sm btn-approve"
+                disabled={loading}
+                onClick={() => updateStatus('approved')}
+              >
+                Approve
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm btn-reject"
+                disabled={loading}
+                aria-expanded={showReasonBox}
+                aria-controls={reasonInputId}
+                onClick={() => setShowReasonBox(!showReasonBox)}
+              >
+                Reject
+              </button>
             </div>
           )}
-        </div>
-
-        {readOnly ? (
-          <span
-            className={`text-sm font-medium whitespace-nowrap ${
-              app.status === 'approved' ? 'text-green-600' : 'text-red-600'
-            }`}
-          >
-            {app.status}
-          </span>
-        ) : (
-          <div className="space-x-2 whitespace-nowrap">
-            <button
-              disabled={loading}
-              onClick={() => updateStatus('approved')}
-              className="bg-green-600 text-white text-sm rounded px-3 py-1.5 disabled:opacity-50"
-            >
-              Approve
-            </button>
-            <button
-              disabled={loading}
-              onClick={() => setShowReasonBox(!showReasonBox)}
-              className="bg-red-600 text-white text-sm rounded px-3 py-1.5 disabled:opacity-50"
-            >
-              Reject
-            </button>
-          </div>
-        )}
-      </div>
+        </td>
+      </tr>
 
       {showReasonBox && (
-        <div className="mt-3 flex gap-2">
-          <input
-            className="flex-1 border rounded px-2 py-1 text-sm"
-            placeholder="Reason for rejection"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-          />
-          <button
-            disabled={loading || !reason}
-            onClick={() => updateStatus('rejected')}
-            className="bg-red-700 text-white text-sm rounded px-3 disabled:opacity-50"
-          >
-            Confirm
-          </button>
-        </div>
+        <tr className="gov-row-form">
+          <td colSpan={6}>
+            <div className="reject-panel">
+              <label className="form-label" htmlFor={reasonInputId}>
+                Reason for rejecting {app.full_name}
+              </label>
+              <div className="reject-controls">
+                <input
+                  id={reasonInputId}
+                  className="form-input"
+                  placeholder="For example: Uploaded ID document is unreadable"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm"
+                  disabled={loading || !reason}
+                  onClick={() => updateStatus('rejected')}
+                >
+                  Reject application
+                </button>
+              </div>
+              <p className="form-hint">This reason is sent to the applicant.</p>
+            </div>
+          </td>
+        </tr>
       )}
-    </div>
+    </>
   )
 }
