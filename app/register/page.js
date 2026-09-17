@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ROLE_CONFIG, ROLE_OPTIONS } from '@/lib/registrationConfig'
+import { SCHEME_CATEGORIES, schemesForCategory } from '@/lib/schemeCatalog'
 
 const safeName = (name) => name.replace(/[^a-zA-Z0-9._-]/g, '_')
 
@@ -34,8 +35,14 @@ export default function RegisterPage() {
     setError(null)
   }
 
-  const handleValueChange = (name, val) => {
-    setValues((prev) => ({ ...prev, [name]: val }))
+    const handleValueChange = (name, val) => {
+    setValues((prev) => {
+      const next = { ...prev, [name]: val }
+      if (name === 'scheme_category') {
+        next.scheme_code = '' // dependent field must reset when category changes
+      }
+      return next
+    })
   }
 
   const handleFileChange = (name, file) => {
@@ -155,7 +162,7 @@ export default function RegisterPage() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {textFields
+                        {textFields
               .filter((f) => f.name !== 'password')
               .map((f) => (
                 <div key={f.name}>
@@ -163,13 +170,43 @@ export default function RegisterPage() {
                     {f.label}
                     {f.required && ' *'}
                   </label>
-                  <input
-                    className="w-full border rounded px-3 py-2"
-                    type={f.type}
-                    value={values[f.name] || ''}
-                    onChange={(e) => handleValueChange(f.name, e.target.value)}
-                    required={f.required}
-                  />
+
+                  {f.type === 'scheme_category' ? (
+                    <select
+                      className="w-full border rounded px-3 py-2"
+                      value={values.scheme_category || ''}
+                      onChange={(e) => handleValueChange('scheme_category', e.target.value)}
+                      required={f.required}
+                    >
+                      <option value="">Select a category…</option>
+                      {SCHEME_CATEGORIES.map((c) => (
+                        <option key={c.value} value={c.value}>{c.label}</option>
+                      ))}
+                    </select>
+                  ) : f.type === 'scheme_code' ? (
+                    <select
+                      className="w-full border rounded px-3 py-2"
+                      value={values.scheme_code || ''}
+                      onChange={(e) => handleValueChange('scheme_code', e.target.value)}
+                      required={f.required}
+                      disabled={!values.scheme_category}
+                    >
+                      <option value="">
+                        {values.scheme_category ? 'Select a scheme…' : 'Choose a category first'}
+                      </option>
+                      {schemesForCategory(values.scheme_category).map((s) => (
+                        <option key={s.code} value={s.code}>{s.label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      className="w-full border rounded px-3 py-2"
+                      type={f.type}
+                      value={values[f.name] || ''}
+                      onChange={(e) => handleValueChange(f.name, e.target.value)}
+                      required={f.required}
+                    />
+                  )}
                 </div>
               ))}
 

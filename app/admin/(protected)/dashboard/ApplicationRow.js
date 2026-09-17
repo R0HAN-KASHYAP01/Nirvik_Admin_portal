@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ROLE_CONFIG } from '@/lib/registrationConfig'
+import { schemeLabel, categoryLabel } from '@/lib/schemeCatalog'
 
 const prettify = (key) =>
   key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
@@ -101,11 +102,17 @@ export default function ApplicationRow({ app, readOnly = false }) {
             {app.official_email} · {app.mobile_number}
           </p>
 
-          {otherDetailEntries.length > 0 && (
+                    {otherDetailEntries.length > 0 && (
             <p className="text-sm text-gray-600 mt-1">
               {otherDetailEntries
                 .filter(([, v]) => v)
-                .map(([key, value]) => `${labelFor(key)}: ${value}`)
+                .map(([key, value]) => {
+                  const displayValue =
+                    key === 'scheme_code' ? schemeLabel(value)
+                    : key === 'scheme_category' ? categoryLabel(value)
+                    : value
+                  return `${labelFor(key)}: ${displayValue}`
+                })
                 .join(' · ')}
             </p>
           )}
