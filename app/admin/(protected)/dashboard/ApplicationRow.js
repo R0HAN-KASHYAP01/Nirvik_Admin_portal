@@ -50,51 +50,53 @@ export default function ApplicationRow({ app, readOnly = false }) {
   const labelFor = (name) =>
     config?.fields.find((f) => f.name === name)?.label || prettify(name)
 
+  // Approve / reject through ONE database function (review_registration).
+  // It updates profiles + the role table + the notification in a single
+  // transaction and returns a real error if anything is blocked. The old
+  // three separate updates could be silently blocked by RLS (0 rows changed,
+  // no error), which made the page just reload with nothing happening.
   const updateStatus = async (newStatus) => {
     if (!tableName) {
       alert(`Unknown role table for "${app.role}" — cannot update.`)
       return
     }
 
-    setLoading(true)
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    const { error: profileErr } = await supabase
-      .from('profiles')
-      .update({ status: newStatus })
-      .eq('id', app.profile_id)
-
-    const { error: roleTableErr } = await supabase
-      .from(tableName)
-      .update({
-        reviewed_by: user.id,
-        reviewed_at: new Date().toISOString(),
-        rejection_reason: newStatus === 'rejected' ? reason : null,
-      })
-      .eq('profile_id', app.profile_id)
-
-    const notifyMessage =
-      newStatus === 'approved'
-        ? `Your ${roleLabel} registration on NIRVIK has been approved. You can now log in.`
-        : `Your ${roleLabel} registration on NIRVIK was rejected. Reason: ${reason}`
-
-    const { error: notifyErr } = await supabase.from('notifications').insert({
-      profile_id: app.profile_id,
-      title: newStatus === 'approved' ? 'Registration Approved' : 'Registration Rejected',
-      message: notifyMessage,
-      notification_type: 'registration',
-    })
-
-    setLoading(false)
-
-    const firstError = profileErr || roleTableErr || notifyErr
-    if (firstError) {
-      alert(firstError.message)
+    const cleanReason = reason.trim()
+    if (newStatus === 'rejected' && !cleanReason) {
+      alert('Please enter a reason for rejecting this application.')
       return
     }
 
-    router.refresh()
+    setLoading(true)
+    try {
+      const supabase = createClient()
+
+      const notifyMessage =
+        newStatus === 'approved'
+          ? `Your ${roleLabel} registration on NIRVIK has been approved. You can now log in.`
+          : `Your ${roleLabel} registration on NIRVIK was rejected. Reason: ${cleanReason}`
+
+      const { error } = await supabase.rpc('review_registration', {
+        p_profile_id: app.profile_id,
+        p_table: tableName,
+        p_status: newStatus,
+        p_reason: newStatus === 'rejected' ? cleanReason : null,
+        p_title:
+          newStatus === 'approved' ? 'Registration Approved' : 'Registration Rejected',
+        p_message: notifyMessage,
+      })
+
+      if (error) {
+        alert(error.message)
+        return
+      }
+
+      router.refresh()
+    } catch (err) {
+      alert(err?.message || 'Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const viewDocument = async (path) => {
@@ -180,7 +182,7 @@ export default function ApplicationRow({ app, readOnly = false }) {
                 disabled={loading}
                 onClick={() => updateStatus('approved')}
               >
-                Approve
+                {loading ? 'Working…' : 'Approve'}
               </button>
               <button
                 type="button"
@@ -215,7 +217,7 @@ export default function ApplicationRow({ app, readOnly = false }) {
                 <button
                   type="button"
                   className="btn btn-danger btn-sm"
-                  disabled={loading || !reason}
+                  disabled={loading || !reason.trim()}
                   onClick={() => updateStatus('rejected')}
                 >
                   Reject application

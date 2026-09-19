@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ROLE_CONFIG, ROLE_OPTIONS } from '@/lib/registrationConfig'
 import { SCHEME_CATEGORIES, schemesForCategory } from '@/lib/schemeCatalog'
+import { INDIA_STATES, districtsForState } from '@/lib/indiaLocations'
 
 const safeName = (name) => name.replace(/[^a-zA-Z0-9._-]/g, '_')
 
@@ -29,6 +30,12 @@ export default function RegisterPage() {
     [config]
   )
 
+  // A district dropdown only makes sense when this role also asks for a state.
+  const hasStateField = useMemo(
+    () => textFields.some((f) => f.name === 'state'),
+    [textFields]
+  )
+
   const handleRoleChange = (e) => {
     setRole(e.target.value)
     setValues({})
@@ -42,6 +49,9 @@ export default function RegisterPage() {
       if (name === 'scheme_category') {
         next.scheme_code = '' // dependent field must reset when category changes
       }
+      if (name === 'state') {
+        next.district = '' // districts belong to a state, so reset on change
+      }
       return next
     })
   }
@@ -50,12 +60,117 @@ export default function RegisterPage() {
     setFiles((prev) => ({ ...prev, [name]: file }))
   }
 
+  // Renders the right control for a field. State and district are matched by
+  // field name (the same name is used as the database column in the insert).
+  const renderControl = (f) => {
+    const id = `field-${f.name}`
+
+    if (f.type === 'scheme_category') {
+      return (
+        <select
+          id={id}
+          className="form-select"
+          value={values.scheme_category || ''}
+          onChange={(e) => handleValueChange('scheme_category', e.target.value)}
+          required={f.required}
+        >
+          <option value="">Select a category…</option>
+          {SCHEME_CATEGORIES.map((c) => (
+            <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
+        </select>
+      )
+    }
+
+    if (f.type === 'scheme_code') {
+      return (
+        <select
+          id={id}
+          className="form-select"
+          value={values.scheme_code || ''}
+          onChange={(e) => handleValueChange('scheme_code', e.target.value)}
+          required={f.required}
+          disabled={!values.scheme_category}
+        >
+          <option value="">
+            {values.scheme_category ? 'Select a scheme…' : 'Choose a category first'}
+          </option>
+          {schemesForCategory(values.scheme_category).map((s) => (
+            <option key={s.code} value={s.code}>{s.label}</option>
+          ))}
+        </select>
+      )
+    }
+
+    if (f.name === 'state') {
+      return (
+        <select
+          id={id}
+          className="form-select"
+          value={values.state || ''}
+          onChange={(e) => handleValueChange('state', e.target.value)}
+          required={f.required}
+        >
+          <option value="">Select a state / UT…</option>
+          {INDIA_STATES.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+      )
+    }
+
+    if (f.name === 'district' && hasStateField) {
+      return (
+        <select
+          id={id}
+          className="form-select"
+          value={values.district || ''}
+          onChange={(e) => handleValueChange('district', e.target.value)}
+          required={f.required}
+          disabled={!values.state}
+        >
+          <option value="">
+            {values.state ? 'Select a district…' : 'Choose a state first'}
+          </option>
+          {districtsForState(values.state).map((d) => (
+            <option key={d} value={d}>{d}</option>
+          ))}
+        </select>
+      )
+    }
+
+    return (
+      <input
+        id={id}
+        className="form-input"
+        type={f.type}
+        value={values[f.name] || ''}
+        onChange={(e) => handleValueChange(f.name, e.target.value)}
+        required={f.required}
+      />
+    )
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError(null)
 
     if (!config) {
       setError('Please select a role.')
+      return
+    }
+
+    // The form uses noValidate, so required text fields (including the new
+    // state / district dropdowns) are checked here.
+    for (const f of textFields) {
+      if (f.name === 'password') continue
+      if (f.required && !String(values[f.name] ?? '').trim()) {
+        setError(`Please fill in: ${f.label}`)
+        return
+      }
+    }
+    if (!values.password) {
+      setError('Please enter a password.')
       return
     }
 
@@ -192,45 +307,7 @@ export default function RegisterPage() {
                         {f.required && ' *'}
                       </label>
 
-                      {f.type === 'scheme_category' ? (
-                        <select
-                          id={`field-${f.name}`}
-                          className="form-select"
-                          value={values.scheme_category || ''}
-                          onChange={(e) => handleValueChange('scheme_category', e.target.value)}
-                          required={f.required}
-                        >
-                          <option value="">Select a category…</option>
-                          {SCHEME_CATEGORIES.map((c) => (
-                            <option key={c.value} value={c.value}>{c.label}</option>
-                          ))}
-                        </select>
-                      ) : f.type === 'scheme_code' ? (
-                        <select
-                          id={`field-${f.name}`}
-                          className="form-select"
-                          value={values.scheme_code || ''}
-                          onChange={(e) => handleValueChange('scheme_code', e.target.value)}
-                          required={f.required}
-                          disabled={!values.scheme_category}
-                        >
-                          <option value="">
-                            {values.scheme_category ? 'Select a scheme…' : 'Choose a category first'}
-                          </option>
-                          {schemesForCategory(values.scheme_category).map((s) => (
-                            <option key={s.code} value={s.code}>{s.label}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <input
-                          id={`field-${f.name}`}
-                          className="form-input"
-                          type={f.type}
-                          value={values[f.name] || ''}
-                          onChange={(e) => handleValueChange(f.name, e.target.value)}
-                          required={f.required}
-                        />
-                      )}
+                      {renderControl(f)}
                     </div>
                   ))}
 
